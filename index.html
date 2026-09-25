@@ -10,7 +10,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#ffffff">
-
+    <link rel="manifest" href="manifest.json">
     <style>
         :root {
             --primary: #2563eb;
@@ -567,5 +567,8 @@ function loadRidesList() {
     };
 }
 </script>
+  if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js');
+}
 </body>
 </html>
