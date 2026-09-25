@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#2563eb">
+    <title>Hlasová Evidencia Jázd</title>
+
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #0f172a;
+            --border: #e2e8f0;
+            --danger: #ef4444;
+            --success: #10b981;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* 1. CELOOBRAZOVKOVÁ PLOCHA - HOLD TO TALK */
+        #splashScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: #1e293b;
+            background-image: url('plocha.jpg');
+            background-size: cover;
+            background-position: center;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            user-select: none;
+            touch-action: manipulation;
+        }
+
+        .splash-overlay {
+            background: rgba(15, 23, 42, 0.75);
+            padding: 30px;
+            border-radius: 20px;
+            color: white;
+            text-align: center;
+            backdrop-filter: blur(6px);
+            border: 1px solid rgba(255,255,255,0.1);
+            max-width: 80%;
+            pointer-events: none; /* Kliknutia prechádzajú na splashScreen */
+        }
+
+        .mic-icon {
+            font-size: 3.5rem;
+            margin-bottom: 10px;
+            transition: transform 0.2s ease;
+        }
+
+        /* Vizuál pri držaní tlačidla */
+        #splashScreen.recording .splash-overlay {
+            background: rgba(220, 38, 38, 0.85);
+            border-color: #f87171;
+        }
+
+        #splashScreen.recording .mic-icon {
+            transform: scale(1.3);
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.7; }
+            50% { opacity: 1; }
+            100% { opacity: 0.7; }
+        }
+
+        /* 2. CELOOBRAZOVKOVÁ KARTA / OVERENIE A ÚPRAVA */
+        #previewScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: #0f172a;
+            color: white;
+            z-index: 2000;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            box-sizing: border-box;
+            overflow-y: auto;
+        }
+
+        .preview-card {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 16px;
+            padding: 24px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.85rem;
+            color: #94a3b8;
+            margin-bottom: 6px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #475569;
+            background: #0f172a;
+            color: white;
+            font-size: 1.1rem;
+            box-sizing: border-box;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .preview-diff {
+            font-size: 0.95rem;
+            color: #60a5fa;
+            margin-top: 4px;
+            font-weight: bold;
+        }
+
+        .save-btn {
+            width: 100%;
+            background: var(--success);
+            color: white;
+            border: none;
+            padding: 16px;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+
+        .cancel-btn {
+            width: 100%;
+            background: transparent;
+            color: #94a3b8;
+            border: 1px solid #475569;
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 10px;
+            cursor: pointer;
+        }
+
+        /* HLAVNÉ ROZHRANIE */
+        .app-container {
+            padding: 16px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: var(--card);
+            padding: 16px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+            border: 1px solid var(--border);
+        }
+
+        .btn {
+            width: 100%;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+
+        .btn-excel { background: #059669; }
+        .btn-danger { background: var(--danger); }
+
+        .ride-item {
+            border-bottom: 1px solid var(--border);
+            padding: 12px 0;
+        }
+
+        .ride-item:last-child { border-bottom: none; }
+    </style>
+</head>
+<body>
+
+    <!-- 1. PLOCHA: PUSH-TO-TALK (PODRŽANIE PRSTA) -->
+    <div id="splashScreen">
+        <div class="splash-overlay">
+            <div class="mic-icon" id="micIcon">🎙️</div>
+            <h2 id="splashTitle" style="margin:0;">PODRŽTE PRE REČ</h2>
+            <p id="splashDesc" style="margin:5px 0 0 0; font-size:0.85rem; color:#cbd5e1;">Držte prst a povedzte stav km</p>
+            <p id="speechStatus" style="color: #fde047; font-weight: bold; margin-top: 10px; min-height:20px;"></p>
+        </div>
+    </div>
+
+    <!-- 2. OVERENIE A RUČNÁ ÚPRAVA ZÁZNAMU -->
+    <div id="previewScreen">
+        <div class="preview-card">
+            <h2 style="margin-top:0; color:white; text-align:center;">Kontrola záznamu</h2>
+            
+            <div class="form-group">
+                <label for="editKm">Nové km (Stav odometra):</label>
+                <input type="number" id="editKm" class="form-input" oninput="updateCalculatedDiff()">
+                <div class="preview-diff" id="prevDiff">Prejdené: 0 km</div>
+            </div>
+
+            <div class="form-group">
+                <label for="editDestination">Cieľ cesty / Poznámka (voliteľné):</label>
+                <input type="text" id="editDestination" class="form-input" placeholder="Napr. Sklad, Nákup, Zákazník...">
+            </div>
+
+            <div class="form-group">
+                <label>Zistená poloha / Adresa:</label>
+                <div id="prevAddress" style="font-size:0.85rem; color:#cbd5e1; background:#0f172a; padding:10px; border-radius:6px; border:1px solid #334155;">
+                    Načítavam...
+                </div>
+            </div>
+
+            <button class="save-btn" onclick="confirmAndSave()">POTVRDIŤ A ULOŽIŤ</button>
+            <button class="cancel-btn" onclick="cancelPreview()">Zrušiť / Späť</button>
+        </div>
+    </div>
+
+    <!-- 3. HLAVNÁ APLIKÁCIA A SPRÁVA DATABÁZY -->
+    <div class="app-container">
+        <h1 style="text-align: center; margin-bottom: 20px;">Evidencia Jázd</h1>
+
+        <div class="card">
+            <button class="btn" onclick="showSplashScreen()">Otvoriť obrazovku zadávania</button>
+        </div>
+
+        <div class="card">
+            <h3 style="margin-top:0;">Správa dát</h3>
+            <button class="btn btn-excel" onclick="exportToExcel()">📊 Exportovať do Excelu (CSV)</button>
+            <button class="btn btn-danger" onclick="clearDatabase()">🗑️ Vymazať celú databázu</button>
+        </div>
+
+        <div class="card">
+            <h3 style="margin-top:0;">Posledné jazdy</h3>
+            <div id="ridesList">Načítavam jazdy...</div>
+        </div>
+    </div>
+
+<script>
+let db;
+let currentCoords = { lat: null, lon: null, accuracy: null };
+let fetchedAddress = "";
+let pendingRide = null;
+let lastOdometerValue = 0;
+let recognition = null;
+let isRecording = false;
+
+// --- INDEXED DB ---
+const dbRequest = indexedDB.open("KninaJazdDB", 1);
+dbRequest.onupgradeneeded = function(e) {
+    db = e.target.result;
+    if (!db.objectStoreNames.contains("rides")) {
+        const store = db.createObjectStore("rides", { keyPath: "id", autoIncrement: true });
+        store.createIndex("datetime", "datetime", { unique: false });
+    }
+};
+dbRequest.onsuccess = function(e) {
+    db = e.target.result;
+    loadRidesList();
+    getGeolocation();
+};
+
+// --- GEOLOKÁCIA ---
+function getGeolocation() {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+            currentCoords.lat = pos.coords.latitude.toFixed(6);
+            currentCoords.lon = pos.coords.longitude.toFixed(6);
+            currentCoords.accuracy = Math.round(pos.coords.accuracy);
+
+            if (navigator.onLine) {
+                try {
+                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${currentCoords.lat}&lon=${currentCoords.lon}`);
+                    const data = await res.json();
+                    fetchedAddress = data.display_name || "";
+                } catch(e) { fetchedAddress = ""; }
+            }
+        },
+        (err) => {},
+        { enableHighAccuracy: true, timeout: 10000 }
+    );
+}
+
+// --- INITIALIZÁCIA PUSH-TO-TALK (HOLD TO TALK) ---
+const splash = document.getElementById('splashScreen');
+
+// Podpora pre dotyk (Mobil) aj myš (PC)
+splash.addEventListener('touchstart', startListening, {passive: false});
+splash.addEventListener('touchend', stopListening);
+splash.addEventListener('mousedown', startListening);
+splash.addEventListener('mouseup', stopListening);
+
+function initSpeech() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) return null;
+
+    const rec = new SpeechRecognition();
+    rec.lang = 'sk-SK';
+    rec.interimResults = false;
+    rec.continuous = false;
+
+    rec.onresult = function(event) {
+        const transcript = event.results[0][0].transcript;
+        document.getElementById('speechStatus').innerText = `Počul som: "${transcript}"`;
+        const extractedNumber = parseSpeechToNumber(transcript);
+
+        if (extractedNumber && !isNaN(extractedNumber)) {
+            processVoiceKm(extractedNumber);
+        } else {
+            alert(`Nenájdené číslo v texte: "${transcript}". Skúste znova.`);
+            document.getElementById('speechStatus').innerText = "";
+        }
+    };
+
+    rec.onerror = function(e) {
+        document.getElementById('speechStatus').innerText = "Chyba rozpoznávania.";
+    };
+
+    return rec;
+}
+
+function startListening(e) {
+    if (e.type === 'touchstart') e.preventDefault(); // Zabráni dvojitému kliknutiu
+    if (isRecording) return;
+
+    if (!recognition) recognition = initSpeech();
+    if (!recognition) {
+        alert("Váš prehliadač nepodporuje rozpoznávanie reči.");
+        return;
+    }
+
+    isRecording = true;
+    splash.classList.add('recording');
+    document.getElementById('splashTitle').innerText = "POČÚVAM...";
+    document.getElementById('splashDesc').innerText = "Pustite prst pre spracovanie";
+    document.getElementById('speechStatus').innerText = "Nahrávam hlas...";
+
+    try { recognition.start(); } catch(err) {}
+}
+
+function stopListening() {
+    if (!isRecording) return;
+    isRecording = false;
+    splash.classList.remove('recording');
+    document.getElementById('splashTitle').innerText = "PODRŽTE PRE REČ";
+    document.getElementById('splashDesc').innerText = "Držte prst a povedzte stav km";
+
+    if (recognition) {
+        try { recognition.stop(); } catch(err) {}
+    }
+}
+
+function parseSpeechToNumber(text) {
+    const digitsOnly = text.replace(/\D/g, '');
+    return digitsOnly.length > 0 ? parseInt(digitsOnly, 10) : null;
+}
+
+// --- SPRACOVANIE A ÚPRAVA ZÁZNAMU ---
+function processVoiceKm(newKm) {
+    const tx = db.transaction("rides", "readonly");
+    const store = tx.objectStore("rides");
+    const req = store.openCursor(null, 'prev');
+
+    req.onsuccess = function(e) {
+        const cursor = e.target.result;
+        lastOdometerValue = cursor ? cursor.value.currentOdo : 0;
+
+        document.getElementById('editKm').value = newKm;
+        document.getElementById('editDestination').value = ""; // Prázdne voliteľné pole
+        document.getElementById('prevAddress').innerText = fetchedAddress || `${currentCoords.lat || 'Neznáme'}, ${currentCoords.lon || ''}`;
+
+        updateCalculatedDiff();
+
+        document.getElementById('splashScreen').style.display = 'none';
+        document.getElementById('previewScreen').style.display = 'flex';
+    };
+}
+
+// Prepočet rozdielu pri ručnej zmene čísla
+function updateCalculatedDiff() {
+    const currentInput = parseInt(document.getElementById('editKm').value, 10) || 0;
+    const diff = currentInput - lastOdometerValue;
+    const diffElement = document.getElementById('prevDiff');
+
+    if (currentInput <= lastOdometerValue) {
+        diffElement.style.color = "#ef4444";
+        diffElement.innerText = `Chyba: Nový stav musí byť väčší ako predchádzajúci (${lastOdometerValue} km)`;
+    } else {
+        diffElement.style.color = "#60a5fa";
+        diffElement.innerText = `Prejdené: +${diff} km (Pôvodne: ${lastOdometerValue} km)`;
+    }
+}
+
+function confirmAndSave() {
+    const finalKm = parseInt(document.getElementById('editKm').value, 10);
+    const customDestination = document.getElementById('editDestination').value.trim();
+
+    if (!finalKm || finalKm <= lastOdometerValue) {
+        alert(`Zadajte platný stav kilometrov väčší ako ${lastOdometerValue} km!`);
+        return;
+    }
+
+    const distance = finalKm - lastOdometerValue;
+    const nowIso = new Date().toISOString();
+
+    const rideRecord = {
+        datetime: nowIso,
+        lastOdo: lastOdometerValue,
+        currentOdo: finalKm,
+        distance: distance,
+        destination: customDestination || "Bez špecifikácie",
+        lat: currentCoords.lat,
+        lon: currentCoords.lon,
+        address: fetchedAddress
+    };
+
+    const tx = db.transaction("rides", "readwrite");
+    const store = tx.objectStore("rides");
+    store.add(rideRecord);
+
+    tx.oncomplete = function() {
+        alert("Jazda bola úspešne uložená!");
+        document.getElementById('previewScreen').style.display = 'none';
+        document.getElementById('speechStatus').innerText = "";
+        loadRidesList();
+    };
+}
+
+function cancelPreview() {
+    document.getElementById('previewScreen').style.display = 'none';
+    document.getElementById('splashScreen').style.display = 'flex';
+    document.getElementById('speechStatus').innerText = "";
+}
+
+function showSplashScreen() {
+    document.getElementById('splashScreen').style.display = 'flex';
+}
+
+// --- EXPORT DO EXCELU (CSV) ---
+function exportToExcel() {
+    const tx = db.transaction("rides", "readonly");
+    const store = tx.objectStore("rides");
+    const req = store.getAll();
+
+    req.onsuccess = function() {
+        const data = req.result;
+        if (data.length === 0) {
+            alert("Nenašli sa žiadne záznamy na export.");
+            return;
+        }
+
+        // Hlavička CSV súboru
+        let csvContent = "\uFEFF"; // BOM pre správne zobrazenie slovenčiny v Exceli
+        csvContent += "Dátum a čas;Pôvodný stav (km);Nový stav (km);Prejdené (km);Cieľ / Poznámka;Adresa;Zem. šírka;Zem. dĺžka\n";
+
+        data.forEach(r => {
+            const dateFormatted = new Date(r.datetime).toLocaleString('sk-SK');
+            const row = [
+                `"${dateFormatted}"`,
+                r.lastOdo,
+                r.currentOdo,
+                r.distance,
+                `"${(r.destination || '').replace(/"/g, '""')}"`,
+                `"${(r.address || '').replace(/"/g, '""')}"`,
+                r.lat || '',
+                r.lon || ''
+            ];
+            csvContent += row.join(";") + "\n";
+        });
+
+        // Stiahnutie súboru
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Evidencia_Jazd_${new Date().toISOString().slice(0,10)}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+    };
+}
+
+// --- VYMAZANIE DATABÁZY ---
+function clearDatabase() {
+    if (confirm("Naozaj chcete VYMAZAŤ VŠETKY uloženie jazdy? Tátom akcia je nevratná!")) {
+        const tx = db.transaction("rides", "readwrite");
+        const store = tx.objectStore("rides");
+        store.clear();
+
+        tx.oncomplete = function() {
+            alert("Databáza bola úspešne vymazaná.");
+            loadRidesList();
+        };
+    }
+}
+
+// --- NAČÍTANIE ZOZNAMU JÁZD ---
+function loadRidesList() {
+    const listDiv = document.getElementById('ridesList');
+    listDiv.innerHTML = '';
+
+    const tx = db.transaction("rides", "readonly");
+    const store = tx.objectStore("rides");
+    const req = store.openCursor(null, 'prev');
+
+    let count = 0;
+    req.onsuccess = function(e) {
+        const cursor = e.target.result;
+        if (cursor) {
+            const r = cursor.value;
+            const item = document.createElement('div');
+            item.className = 'ride-item';
+            item.innerHTML = `
+                <div><strong>${new Date(r.datetime).toLocaleString('sk-SK')}</strong> — <span style="color:var(--primary); font-weight:bold;">+${r.distance} km</span></div>
+                <div style="font-size:0.9rem; font-weight:500; margin-top:2px;">Stav: ${r.lastOdo} ➔ ${r.currentOdo} km | Cieľ: ${r.destination}</div>
+                <div style="font-size:0.8rem; color:#64748b; margin-top:2px;">${r.address || 'Bez zistenej adresy'}</div>
+            `;
+            listDiv.appendChild(item);
+            count++;
+            cursor.continue();
+        } else if (count === 0) {
+            listDiv.innerHTML = '<p style="text-align:center; color:#64748b;">Žiadne uloženie záznamy</p>';
+        }
+    };
+}
+</script>
+</body>
+</html>
